@@ -1,8 +1,7 @@
 {
-  "name": "chrome-extension-starter-kit",
-  "version": "0.3.2",
-  "description": "",
-  "main": "index.js",
+  "name": "link-drag-extension",
+  "version": "0.0.1",
+  "description": "リンクをドラッグする方向で，タブやウィンドウの開き方やURLコピーを切り替えるChrome拡張機能",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -15,7 +14,15 @@
     "pack": "npm run build && exr pack dist/",
     "release": "npm run build && exr release dist/ --force"
   },
-  "keywords": [],
+  "keywords": ["chrome-extension", "link-drag", "drag-and-drop"],
+  "homepage": "https://github.com/yhotta240/link-drag-extension#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yhotta240/link-drag-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yhotta240/link-drag-extension/issues"
+  },
   "author": "yhotta240",
   "license": "MIT",
   "engines": {
