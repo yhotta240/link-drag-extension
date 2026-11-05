@@ -4,7 +4,8 @@
   "description": "リンクをドラッグする方向で，タブやウィンドウの開き方やURLコピーを切り替えるChrome拡張機能",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check": "biome check src",
     "check:fix": "biome check --write --unsafe src",
     "typecheck": "tsc --noEmit",
@@ -14,7 +15,11 @@
     "pack": "npm run build && exr pack dist/",
     "release": "npm run build && exr release dist/ --force"
   },
-  "keywords": ["chrome-extension", "link-drag", "drag-and-drop"],
+  "keywords": [
+    "chrome-extension",
+    "link-drag",
+    "drag-and-drop"
+  ],
   "homepage": "https://github.com/yhotta240/link-drag-extension#readme",
   "repository": {
     "type": "git",
@@ -42,6 +47,7 @@
     "vite": "^8.0.16",
     "vite-plugin-css-injected-by-js": "^5.0.1",
     "vite-plugin-static-copy": "^4.1.1",
+    "vitest": "5.1.0",
     "ws": "^8.18.3"
   },
   "dependencies": {
