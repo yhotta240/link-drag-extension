@@ -6,6 +6,7 @@ import {
   MENU_VIEWPORT_MARGIN,
   type MenuLayout,
 } from "../utils/drag";
+import indicatorStyles from "./indicator.css?inline";
 
 const ACTION_ICON_PATHS: Record<Exclude<DragAction, "none">, readonly string[]> = {
   "foreground-tab": ["M3 7h14v14H3z", "M7 3h14v14h-4", "M6 11h8", "M10 18v-4m-2 2 2-2 2 2"],
@@ -29,39 +30,12 @@ export class DragIndicator {
       "all:initial!important;position:fixed!important;inset:0 auto auto 0!important;" +
       "z-index:2147483647!important;pointer-events:none!important;" +
       "display:block!important;width:0!important;height:0!important;";
+    this.host.style.setProperty("--menu-icon-size", `${MENU_ICON_SIZE}px`);
+    this.host.style.setProperty("--menu-icon-scale", String(MENU_ICON_SCALE));
+    this.host.style.setProperty("--menu-icon-glow", `${MENU_ICON_GLOW}px`);
     const root = this.host.attachShadow({ mode: "closed" });
     const style = document.createElement("style");
-    style.textContent = `
-      * { box-sizing: border-box; pointer-events: none !important; }
-      div { all: initial; box-sizing: border-box; position: fixed;
-        font: 13px/1.4 system-ui, sans-serif; pointer-events: none; color: #f8fafc; }
-      .ring { border: 1px dashed #64748b88; border-radius: 50%; }
-      .target { display: flex; align-items: center; justify-content: center;
-        text-align: center; }
-      .icon { position: relative; display: flex; align-items: center; justify-content: center;
-        width: calc(${MENU_ICON_SIZE}px * var(--menu-scale, 1)); height: calc(${MENU_ICON_SIZE}px * var(--menu-scale, 1)); border-radius: 50%; background: rgb(24 33 47 / 95%);
-        color: #cbd5e1; transition: transform .14s ease, background-color .14s ease,
-          box-shadow .14s ease, color .14s ease; }
-      .icon svg { display: block; width: calc(23px * var(--menu-scale, 1)); height: calc(23px * var(--menu-scale, 1)); fill: none;
-        stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-      .target.selected .icon { transform: scale(${MENU_ICON_SCALE}); background: rgb(37 99 235 / 95%);
-        color: #fff; box-shadow: 0 0 0 calc(${MENU_ICON_GLOW}px * var(--menu-scale, 1)) rgb(59 130 246 / 16%); }
-      span { all: initial; font: inherit; color: inherit; display: block; }
-      .label { position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-        width: max-content; max-width: min(160px, calc(100vw - 8px)); padding: 4px 7px; border-radius: 4px;
-        background: rgb(24 33 47 / 95%); font-size: 12px; text-align: center;
-        opacity: 0; visibility: hidden; transition: opacity .14s ease; }
-      .label.above { top: auto; bottom: 100%; }
-      .target.selected .label { opacity: 1; visibility: visible; }
-      .toast { padding: 7px 11px; border-radius: 5px; background: #18212f;
-        border: 1px solid #64748b;
-        white-space: nowrap; max-width: calc(100vw - 16px); overflow: hidden;
-        text-overflow: ellipsis; }
-      @media (prefers-reduced-motion: reduce) {
-        .icon, .label { transition: none; }
-        .target.selected .icon { transform: none; }
-      }
-    `;
+    style.textContent = indicatorStyles;
     root.append(style);
     document.documentElement.append(this.host);
     return root;
