@@ -131,7 +131,9 @@ export function createMenuLayout(
     if (radius < minimumRadius || radius > maximumRadius) return false;
     const arc = findVisibleArc(startX, startY, radius, viewportWidth, viewportHeight);
     if (!arc) return false;
-    const step = slots.length === 1 ? 0 : arc.span / (arc.full ? slots.length : slots.length - 1);
+    // ほぼ一周の円弧でも，最初と最後のアイコンが接近しない間隔にする．
+    const step =
+      slots.length === 1 ? 0 : Math.min(arc.span / (slots.length - 1), FULL_CIRCLE / slots.length);
     if (slots.length > 1 && 2 * radius * Math.sin(step / 2) < spacing - 1e-6) return false;
     layout.radius = radius;
     slots.forEach((slot, index) => {

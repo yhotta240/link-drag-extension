@@ -100,6 +100,21 @@ test("四辺と四隅でも中心を動かさず，全操作を画面内の円�
   }
 });
 
+test("円弧がほぼ一周しても，両端を含むすべてのアイコンを重ねない", () => {
+  const layout = createMenuLayout(500, 185.3, 150, 1000, 800);
+  const targets = Object.values(layout.targets);
+  assert.equal(targets.length, 4);
+  assert.equal(layout.radius, 150);
+  for (let i = 0; i < targets.length; i++) {
+    for (const other of targets.slice(i + 1)) {
+      assert.ok(
+        Math.hypot(targets[i].x - other.x, targets[i].y - other.y) >= MENU_ICON_SIZE * MENU_ICON_SCALE,
+        "拡大したアイコン同士が重ならない",
+      );
+    }
+  }
+});
+
 test("狭い表示領域では半径を調整し，全操作を残す", () => {
   const layout = createMenuLayout(150, 100, 150, 300, 200);
   assert.equal(Object.keys(layout.targets).length, 4);
