@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 import { DEFAULT_SETTINGS, normalizeSettings } from "../src/settings.ts";
-import { createMenuLayout, getMenuDirection, normalizeLinkUrl } from "../src/utils/drag.ts";
+import {
+  createMenuLayout,
+  getMenuDirection,
+  normalizeLinkUrl,
+  MENU_ICON_SIZE,
+  MENU_ICON_SCALE,
+  MENU_ICON_GLOW,
+  MENU_VIEWPORT_MARGIN,
+} from "../src/utils/drag.ts";
 
 test("初期値と欠けた同期設定を補完し，方向の設定を共有しない", () => {
   assert.deepEqual(normalizeSettings(undefined), DEFAULT_SETTINGS);
@@ -34,59 +42,134 @@ test("不正な設定を初期値へ戻し，有効な値と重複アクショ�
   });
 });
 
-for (const [x, y, direction] of [
-  [500, 250, "up"],
-  [500, 550, "down"],
-  [350, 400, "left"],
-  [650, 400, "right"],
-  [500, 400, null],
-  [500, 350, null],
-  [650, 250, null],
-  [500, 100, null],
-] as const) {
-  test(`操作の上でのみ選択 (${x}, ${y}) → ${direction}`, () => {
-    const layout = createMenuLayout(500, 400, 150, 1000, 800);
-    assert.equal(getMenuDirection(layout, x, y), direction);
-  });
-}
-
-test("ドラッグ開始位置から150pxの4か所に操作を配置", () => {
+test("通常は開始位置を中心に設定どおりの上下左右へ配置する", () => {
   const layout = createMenuLayout(500, 400, 150, 1000, 800);
   assert.equal(layout.x, 500);
   assert.equal(layout.y, 400);
-  for (const target of Object.values(layout.targets)) {
-    assert.equal(
-      Math.hypot(target.x + target.width / 2 - 500, target.y + target.height / 2 - 400),
-      150,
-    );
+  assert.equal(layout.radius, 150);
+  for (const [x, y, direction] of [
+    [500, 250, "up"],
+    [650, 400, "right"],
+    [500, 550, "down"],
+    [350, 400, "left"],
+    [500, 400, null],
+    [650, 250, null],
+  ] as const) {
+    assert.equal(getMenuDirection(layout, x, y), direction);
   }
 });
 
-test("画面端・小さなフレームでは全操作を表示範囲へ収める", () => {
-  for (const [width, height] of [
-    [1000, 800],
-    [300, 200],
+test("四辺と四隅でも中心を動かさず，全操作を画面内の円弧へ配置", () => {
+  for (const [x, y] of [
+    [2, 400],
+    [998, 400],
+    [500, 2],
+    [500, 798],
+    [2, 2],
+    [998, 2],
+    [2, 798],
+    [998, 798],
   ]) {
-    const layout = createMenuLayout(2, 2, 150, width, height);
-    for (const target of Object.values(layout.targets)) {
-      assert.ok(target.x >= 8 - 1e-8 && target.y >= 8 - 1e-8);
-      assert.ok(target.x + target.width <= width - 8 + 1e-8);
-      assert.ok(target.y + target.height <= height - 8 + 1e-8);
+    const layout = createMenuLayout(x, y, 150, 1000, 800);
+    assert.equal(layout.x, x);
+    assert.equal(layout.y, y);
+    const targets = (["up", "right", "down", "left"] as const).map((direction) => {
+      const target = layout.targets[direction];
+      assert.ok(target);
+      assert.equal(
+        getMenuDirection(layout, target.x + target.width / 2, target.y + target.height / 2),
+        direction,
+      );
+      return target;
+    });
+    const extent = (MENU_ICON_SIZE / 2 + MENU_ICON_GLOW) * MENU_ICON_SCALE;
+    for (const target of targets) {
+      const px = target.x + 32,
+        py = target.y + 32;
+      assert.ok(px - extent >= MENU_VIEWPORT_MARGIN - 1e-6);
+      assert.ok(py - extent >= MENU_VIEWPORT_MARGIN - 1e-6);
+      assert.ok(px + extent <= 1000 - MENU_VIEWPORT_MARGIN + 1e-6);
+      assert.ok(py + extent <= 800 - MENU_VIEWPORT_MARGIN + 1e-6);
+    }
+    for (let i = 1; i < targets.length; i++) {
+      const previousAngle = Math.atan2(targets[i - 1].x + 32 - x, y - targets[i - 1].y - 32);
+      const angle = Math.atan2(targets[i].x + 32 - x, y - targets[i].y - 32);
+      const clockwiseStep = (angle - previousAngle + Math.PI * 2) % (Math.PI * 2);
+      assert.ok(clockwiseStep > 0 && clockwiseStep < Math.PI);
     }
   }
 });
 
-test("上下のみ割り当てた場合は左右の判定領域を作らない", () => {
+test("円弧がほぼ一周しても，両端を含むすべてのアイコンを重ねない", () => {
+  const layout = createMenuLayout(500, 185.3, 150, 1000, 800);
+  const targets = Object.values(layout.targets);
+  assert.equal(targets.length, 4);
+  assert.equal(layout.radius, 150);
+  for (let i = 0; i < targets.length; i++) {
+    for (const other of targets.slice(i + 1)) {
+      assert.ok(
+        Math.hypot(targets[i].x - other.x, targets[i].y - other.y) >= MENU_ICON_SIZE * MENU_ICON_SCALE,
+        "拡大したアイコン同士が重ならない",
+      );
+    }
+  }
+});
+
+test("狭い表示領域では半径を調整し，全操作を残す", () => {
+  const layout = createMenuLayout(150, 100, 150, 300, 200);
+  assert.equal(Object.keys(layout.targets).length, 4);
+  assert.ok(layout.radius < 150);
+  assert.equal(layout.x, 150);
+  assert.equal(layout.y, 100);
+});
+
+test("判定範囲が重なっても近いアイコンを選ぶ", () => {
+  const layout = createMenuLayout(2, 2, 150, 1000, 800);
+  const first = layout.targets.up,
+    second = layout.targets.right;
+  assert.ok(first && second);
+  const x = (first.x + 32) * 0.49 + (second.x + 32) * 0.51;
+  const y = (first.y + 32) * 0.49 + (second.y + 32) * 0.51;
+  assert.equal(getMenuDirection(layout, x, y), "right");
+});
+
+test("未割り当てだけを除き，同じ操作も設定された方向に残す", () => {
   const layout = createMenuLayout(500, 400, 150, 1000, 800, {
-    ...DEFAULT_SETTINGS.directions,
-    left: "none",
+    up: "foreground-tab",
+    down: "foreground-tab",
+    left: "copy-url",
     right: "none",
   });
-  assert.deepEqual(Object.keys(layout.targets), ["up", "down"]);
-  assert.equal(getMenuDirection(layout, 350, 400), null);
-  assert.equal(getMenuDirection(layout, 650, 400), null);
+  assert.deepEqual(Object.keys(layout.targets), ["up", "down", "left"]);
   assert.equal(getMenuDirection(layout, 500, 250), "up");
   assert.equal(getMenuDirection(layout, 500, 550), "down");
+  assert.equal(getMenuDirection(layout, 350, 400), "left");
+  assert.equal(getMenuDirection(layout, 650, 400), null);
+});
+
+test("有効な方向が収まれば，端でも通常の配置を保つ", () => {
+  const layout = createMenuLayout(40, 400, 150, 1000, 800, {
+    up: "background-tab",
+    right: "new-window",
+    down: "none",
+    left: "none",
+  });
+  assert.equal(layout.radius, 150);
+  assert.deepEqual(Object.keys(layout.targets), ["up", "right"]);
+  assert.equal(getMenuDirection(layout, 40, 250), "up");
+  assert.equal(getMenuDirection(layout, 190, 400), "right");
+});
+
+test("操作が未割り当てならメニューを作らない", () => {
+  assert.deepEqual(
+    createMenuLayout(500, 400, 150, 1000, 800, {
+      up: "none",
+      down: "none",
+      left: "none",
+      right: "none",
+    }).targets,
+    {},
+  );
 });
 
 test("相対URL・HTTP(S)を正規化し，実行可能なスキームを限定する", () => {

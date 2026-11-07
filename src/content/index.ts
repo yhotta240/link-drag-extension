@@ -12,8 +12,6 @@ import { DragIndicator } from "./indicator";
 
 interface DragSession {
   url: string;
-  x: number;
-  y: number;
   layout: MenuLayout;
 }
 
@@ -94,12 +92,7 @@ window.addEventListener("dragstart", (event) => {
     settings.directions,
   );
   if (Object.keys(layout.targets).length === 0) return;
-  session = {
-    url,
-    x: mouseStart.x,
-    y: mouseStart.y,
-    layout,
-  };
+  session = { url, layout };
   if (settings.showIndicator) indicator.show(session.layout, settings.directions);
 });
 
@@ -149,7 +142,6 @@ window.addEventListener(
     event.stopImmediatePropagation();
     void (async () => {
       try {
-        if (action === "none") return;
         if (action === "copy-url") {
           await copyUrl(drag.url);
           indicator.notify("URLをコピーしました", event.clientX, event.clientY);
@@ -203,23 +195,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "sync" || !changes[SETTINGS_KEY]) return;
   settingsRevision++;
   settings = normalizeSettings(changes[SETTINGS_KEY].newValue);
-  if (!settings.enabled) cancel();
-  if (session) {
-    session.layout = createMenuLayout(
-      session.x,
-      session.y,
-      settings.menuRadius,
-      innerWidth,
-      innerHeight,
-      settings.directions,
-    );
-    acceptedTarget = null;
-    if (Object.keys(session.layout.targets).length === 0) {
-      cancel();
-      return;
-    }
-    if (settings.showIndicator) indicator.show(session.layout, settings.directions);
-  }
+  // 表示後の並べ替えや，設定変更前の表示と実行内容の食い違いを避ける．
+  if (!settings.enabled || session) cancel();
   if (!settings.showIndicator) indicator.hide();
 });
 
