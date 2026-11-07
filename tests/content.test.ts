@@ -237,9 +237,23 @@ test("URLコピーはページ内で実行し，割り当てなしの方向で�
     "sync",
   );
   start();
-  expect(drop().defaultPrevented).toBe(false);
+  const layout = mocks.show.mock.calls[mocks.show.mock.calls.length - 1]?.[0];
+  expect(layout?.targets.up).toBeUndefined();
+  expect(drop(500, 250).defaultPrevented).toBe(false);
   expect(sendMessage).not.toHaveBeenCalled();
   expect(mocks.highlight).toHaveBeenLastCalledWith(null);
+});
+
+test("表示後の位置は変えず，設定変更時は誤実行を避けてキャンセル", () => {
+  start();
+  expect(mocks.show).toHaveBeenCalledTimes(1);
+  fire("dragover", { clientY: 250 });
+  fire("dragover", { clientX: 650 });
+  expect(mocks.show).toHaveBeenCalledTimes(1);
+  changed({ settings: { newValue: { ...DEFAULT_SETTINGS, menuRadius: 180 } } }, "sync");
+  expect(mocks.show).toHaveBeenCalledTimes(1);
+  expect(fire("drop", { clientX: 650 }).defaultPrevented).toBe(false);
+  expect(sendMessage).not.toHaveBeenCalled();
 });
 
 test("合成イベント，右ボタン，リンク以外，危険なURLでは実行しない", () => {
@@ -259,24 +273,6 @@ test("合成イベント，右ボタン，リンク以外，危険なURLでは�
   expect(sendMessage).not.toHaveBeenCalled();
 });
 
-test("割り当てなしに切り替えた方向では直前の選択を実行しない", () => {
-  start();
-  fire("dragover", { clientY: 250 });
-  changed(
-    {
-      settings: {
-        newValue: {
-          ...DEFAULT_SETTINGS,
-          directions: { ...DEFAULT_SETTINGS.directions, up: "none" },
-        },
-      },
-    },
-    "sync",
-  );
-  expect(fire("drop", { clientY: 250 }).defaultPrevented).toBe(false);
-  expect(sendMessage).not.toHaveBeenCalled();
-});
-
 test("全方向が割り当てなしの場合はメニューを表示せず，ドラッグを標準操作に委ねる", () => {
   changed(
     {
@@ -291,25 +287,6 @@ test("全方向が割り当てなしの場合はメニューを表示せず，�
   );
   start();
   expect(mocks.show).not.toHaveBeenCalled();
-  expect(drop().defaultPrevented).toBe(false);
-  expect(sendMessage).not.toHaveBeenCalled();
-});
-
-test("ドラッグ中に全方向を割り当てなしにすると表示と選択を解除", () => {
-  start();
-  fire("dragover", { clientY: 250 });
-  changed(
-    {
-      settings: {
-        newValue: {
-          ...DEFAULT_SETTINGS,
-          directions: { up: "none", down: "none", left: "none", right: "none" },
-        },
-      },
-    },
-    "sync",
-  );
-  expect(mocks.hide).toHaveBeenCalled();
   expect(drop().defaultPrevented).toBe(false);
   expect(sendMessage).not.toHaveBeenCalled();
 });

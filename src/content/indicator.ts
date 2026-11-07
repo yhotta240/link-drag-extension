@@ -1,5 +1,11 @@
 import { ACTION_LABELS, DIRECTIONS, type Direction, type DragAction } from "../settings";
-import type { MenuLayout } from "../utils/drag";
+import {
+  MENU_ICON_GLOW,
+  MENU_ICON_SCALE,
+  MENU_ICON_SIZE,
+  MENU_VIEWPORT_MARGIN,
+  type MenuLayout,
+} from "../utils/drag";
 
 const ACTION_ICON_PATHS: Record<Exclude<DragAction, "none">, readonly string[]> = {
   "foreground-tab": ["M3 7h14v14H3z", "M7 3h14v14h-4", "M6 11h8", "M10 18v-4m-2 2 2-2 2 2"],
@@ -33,16 +39,16 @@ export class DragIndicator {
       .target { display: flex; align-items: center; justify-content: center;
         text-align: center; }
       .icon { position: relative; display: flex; align-items: center; justify-content: center;
-        width: 44px; height: 44px; border-radius: 50%; background: rgb(24 33 47 / 95%);
+        width: ${MENU_ICON_SIZE}px; height: ${MENU_ICON_SIZE}px; border-radius: 50%; background: rgb(24 33 47 / 95%);
         color: #cbd5e1; transition: transform .14s ease, background-color .14s ease,
           box-shadow .14s ease, color .14s ease; }
       .icon svg { display: block; width: 23px; height: 23px; fill: none;
         stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-      .target.selected .icon { transform: scale(1.16); background: rgb(37 99 235 / 95%);
-        color: #fff; box-shadow: 0 0 0 5px rgb(59 130 246 / 16%); }
+      .target.selected .icon { transform: scale(${MENU_ICON_SCALE}); background: rgb(37 99 235 / 95%);
+        color: #fff; box-shadow: 0 0 0 ${MENU_ICON_GLOW}px rgb(59 130 246 / 16%); }
       span { all: initial; font: inherit; color: inherit; display: block; }
       .label { position: absolute; top: calc(50% + 32px); left: 50%; transform: translateX(-50%);
-        width: max-content; max-width: 100%; padding: 4px 7px; border-radius: 4px;
+        width: max-content; max-width: min(160px, calc(100vw - 8px)); padding: 4px 7px; border-radius: 4px;
         background: rgb(24 33 47 / 95%); font-size: 12px; text-align: center;
         opacity: 0; visibility: hidden; transition: opacity .14s ease; }
       .label.above { top: auto; bottom: calc(50% + 32px); }
@@ -102,6 +108,13 @@ export class DragIndicator {
       card.append(icon, action);
       root.append(card);
       this.targets.set(direction, card);
+      // 操作名は判定領域と別に寄せ，アイコンが端に近くても全文を読めるようにする．
+      const bounds = action.getBoundingClientRect();
+      const offset = Math.max(
+        MENU_VIEWPORT_MARGIN - bounds.left,
+        Math.min(0, innerWidth - MENU_VIEWPORT_MARGIN - bounds.right),
+      );
+      action.style.marginLeft = `${offset}px`;
     }
   }
 
