@@ -39,19 +39,19 @@ export class DragIndicator {
       .target { display: flex; align-items: center; justify-content: center;
         text-align: center; }
       .icon { position: relative; display: flex; align-items: center; justify-content: center;
-        width: ${MENU_ICON_SIZE}px; height: ${MENU_ICON_SIZE}px; border-radius: 50%; background: rgb(24 33 47 / 95%);
+        width: calc(${MENU_ICON_SIZE}px * var(--menu-scale, 1)); height: calc(${MENU_ICON_SIZE}px * var(--menu-scale, 1)); border-radius: 50%; background: rgb(24 33 47 / 95%);
         color: #cbd5e1; transition: transform .14s ease, background-color .14s ease,
           box-shadow .14s ease, color .14s ease; }
-      .icon svg { display: block; width: 23px; height: 23px; fill: none;
+      .icon svg { display: block; width: calc(23px * var(--menu-scale, 1)); height: calc(23px * var(--menu-scale, 1)); fill: none;
         stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
       .target.selected .icon { transform: scale(${MENU_ICON_SCALE}); background: rgb(37 99 235 / 95%);
-        color: #fff; box-shadow: 0 0 0 ${MENU_ICON_GLOW}px rgb(59 130 246 / 16%); }
+        color: #fff; box-shadow: 0 0 0 calc(${MENU_ICON_GLOW}px * var(--menu-scale, 1)) rgb(59 130 246 / 16%); }
       span { all: initial; font: inherit; color: inherit; display: block; }
-      .label { position: absolute; top: calc(50% + 32px); left: 50%; transform: translateX(-50%);
+      .label { position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
         width: max-content; max-width: min(160px, calc(100vw - 8px)); padding: 4px 7px; border-radius: 4px;
         background: rgb(24 33 47 / 95%); font-size: 12px; text-align: center;
         opacity: 0; visibility: hidden; transition: opacity .14s ease; }
-      .label.above { top: auto; bottom: calc(50% + 32px); }
+      .label.above { top: auto; bottom: 100%; }
       .target.selected .label { opacity: 1; visibility: visible; }
       .toast { padding: 7px 11px; border-radius: 5px; background: #18212f;
         border: 1px solid #64748b;
@@ -88,7 +88,7 @@ export class DragIndicator {
       card.dataset.direction = direction;
       card.style.cssText =
         `left:${target.x}px;top:${target.y}px;` +
-        `width:${target.width}px;height:${target.height}px;`;
+        `width:${target.width}px;height:${target.height}px;--menu-scale:${layout.scale};`;
       const icon = document.createElement("div");
       icon.className = "icon";
       icon.setAttribute("aria-hidden", "true");

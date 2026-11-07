@@ -57,6 +57,7 @@ test("初期状態で開始位置を中心に8方向の操作を選択できる"
   assert.equal(layout.x, 500);
   assert.equal(layout.y, 400);
   assert.equal(layout.radius, 150);
+  assert.equal(layout.scale, 1);
   assert.equal(Object.keys(layout.targets).length, 8);
   const offset = 150 / Math.sqrt(2);
   for (const [direction, x, y] of [
@@ -75,66 +76,69 @@ test("初期状態で開始位置を中心に8方向の操作を選択できる"
   }
 });
 
-test("4方向・8方向とも四辺と四隅で中心を動かさず，全操作を画面内へ配置", () => {
-  for (const directions of [cardinalDirections, DEFAULT_SETTINGS.directions]) {
-    for (const [x, y] of [
-      [2, 400],
-      [998, 400],
-      [500, 2],
-      [500, 798],
-      [2, 2],
-      [998, 2],
-      [2, 798],
-      [998, 798],
-      [500, 185.3],
-    ]) {
-      const layout = createMenuLayout(x, y, 150, 1000, 800, directions);
+test("通常・狭い領域の4方向・8方向を，中心固定の1段に収めて選択できる", () => {
+  for (const [width, height, directions, checkEdges] of [
+    [1000, 800, cardinalDirections, true],
+    [1000, 800, DEFAULT_SETTINGS.directions, true],
+    [400, 300, DEFAULT_SETTINGS.directions, true],
+    [300, 200, cardinalDirections, false],
+    [300, 200, DEFAULT_SETTINGS.directions, false],
+  ] as const) {
+    const positions = [[width / 2, height / 2]];
+    if (checkEdges)
+      positions.push(
+        [2, height / 2],
+        [width - 2, height / 2],
+        [width / 2, 2],
+        [width / 2, height - 2],
+        [2, 2],
+        [width - 2, 2],
+        [2, height - 2],
+        [width - 2, height - 2],
+      );
+    if (width === 1000) positions.push([500, 185.3]);
+    const enabled = DIRECTIONS.filter((direction) => directions[direction] !== "none");
+    for (const [x, y] of positions) {
+      const layout = createMenuLayout(x, y, 150, width, height, directions);
       assert.equal(layout.x, x);
       assert.equal(layout.y, y);
-      const targets = DIRECTIONS.filter((direction) => directions[direction] !== "none").map(
-        (direction) => {
-          const target = layout.targets[direction];
-          assert.ok(target);
-          assert.equal(
-            getMenuDirection(layout, target.x + target.width / 2, target.y + target.height / 2),
-            direction,
-          );
-          return target;
-        },
-      );
-      const extent = (MENU_ICON_SIZE / 2 + MENU_ICON_GLOW) * MENU_ICON_SCALE;
-      for (const target of targets) {
-        const px = target.x + 32,
-          py = target.y + 32;
+      assert.equal(Object.keys(layout.targets).length, enabled.length);
+      assert.ok(layout.scale >= 0.75 && layout.scale <= 1);
+      if (width === 1000) assert.equal(layout.scale, 1);
+      if (width === 300) assert.ok(layout.radius < 150);
+      if (width === 400 && x === 2 && y === 2) assert.ok(layout.scale < 1);
+      const extent = (MENU_ICON_SIZE / 2 + MENU_ICON_GLOW) * MENU_ICON_SCALE * layout.scale;
+      const centers = enabled.map((direction) => {
+        const target = layout.targets[direction];
+        assert.ok(target);
+        assert.equal(target.width, 64 * layout.scale);
+        assert.equal(target.height, 64 * layout.scale);
+        const px = target.x + target.width / 2,
+          py = target.y + target.height / 2;
         assert.ok(px - extent >= MENU_VIEWPORT_MARGIN - 1e-6);
         assert.ok(py - extent >= MENU_VIEWPORT_MARGIN - 1e-6);
-        assert.ok(px + extent <= 1000 - MENU_VIEWPORT_MARGIN + 1e-6);
-        assert.ok(py + extent <= 800 - MENU_VIEWPORT_MARGIN + 1e-6);
-      }
-      for (let i = 1; i < targets.length; i++) {
-        const previousAngle = Math.atan2(targets[i - 1].x + 32 - x, y - targets[i - 1].y - 32);
-        const angle = Math.atan2(targets[i].x + 32 - x, y - targets[i].y - 32);
+        assert.ok(px + extent <= width - MENU_VIEWPORT_MARGIN + 1e-6);
+        assert.ok(py + extent <= height - MENU_VIEWPORT_MARGIN + 1e-6);
+        assert.ok(Math.abs(Math.hypot(px - x, py - y) - layout.radius) < 1e-6);
+        assert.equal(getMenuDirection(layout, px, py), direction);
+        return { x: px, y: py };
+      });
+      for (let i = 1; i < centers.length; i++) {
+        const previousAngle = Math.atan2(centers[i - 1].x - x, y - centers[i - 1].y);
+        const angle = Math.atan2(centers[i].x - x, y - centers[i].y);
         const clockwiseStep = (angle - previousAngle + Math.PI * 2) % (Math.PI * 2);
         assert.ok(clockwiseStep > 0 && clockwiseStep < Math.PI);
       }
-      for (let i = 0; i < targets.length; i++) {
-        for (const other of targets.slice(i + 1)) {
+      for (let i = 0; i < centers.length; i++) {
+        for (const other of centers.slice(i + 1)) {
           assert.ok(
-            Math.hypot(targets[i].x - other.x, targets[i].y - other.y) >=
-              MENU_ICON_SIZE * MENU_ICON_SCALE,
+            Math.hypot(centers[i].x - other.x, centers[i].y - other.y) >=
+              MENU_ICON_SIZE * MENU_ICON_SCALE * layout.scale,
           );
         }
       }
     }
   }
-});
-
-test("狭い表示領域でも，4方向の操作を半径を調整して表示する", () => {
-  const layout = createMenuLayout(150, 100, 150, 300, 200, cardinalDirections);
-  assert.equal(Object.keys(layout.targets).length, 4);
-  assert.ok(layout.radius < 150);
-  assert.equal(layout.x, 150);
-  assert.equal(layout.y, 100);
 });
 
 test("判定範囲が重なっても近いアイコンを選ぶ", () => {

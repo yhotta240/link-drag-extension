@@ -312,6 +312,16 @@ test("全方向が割り当てなしの場合はメニューを表示せず，�
   expect(sendMessage).not.toHaveBeenCalled();
 });
 
+test("縮小しても収まらない領域ではメニューを表示せず，操作を実行しない", () => {
+  vi.stubGlobal("innerWidth", 200);
+  vi.stubGlobal("innerHeight", 150);
+  fire("mousedown", { target: child, clientX: 2, clientY: 2 });
+  fire("dragstart", { target: child, clientX: 2, clientY: 2 });
+  expect(mocks.show).not.toHaveBeenCalled();
+  expect(drop(100, 75).defaultPrevented).toBe(false);
+  expect(sendMessage).not.toHaveBeenCalled();
+});
+
 test("リンク上のテキスト選択は対象外とし，別の場所の選択は妨げない", () => {
   selection = { isCollapsed: false, containsNode: () => true };
   start();
