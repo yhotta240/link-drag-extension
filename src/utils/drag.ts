@@ -23,12 +23,15 @@ export interface MenuLayout {
 }
 
 const FULL_CIRCLE = Math.PI * 2;
-const CLOCKWISE_DIRECTIONS = ["up", "right", "down", "left"] as const;
 const DIRECTION_OFFSETS: Record<Direction, readonly [number, number]> = {
   up: [0, -1],
+  "up-right": [Math.SQRT1_2, -Math.SQRT1_2],
   right: [1, 0],
+  "down-right": [Math.SQRT1_2, Math.SQRT1_2],
   down: [0, 1],
+  "down-left": [-Math.SQRT1_2, Math.SQRT1_2],
   left: [-1, 0],
+  "up-left": [-Math.SQRT1_2, -Math.SQRT1_2],
 };
 const ANGLE_STEP = FULL_CIRCLE / 360;
 const CIRCLE_POINTS = Array.from({ length: 360 }, (_, index) => ({
@@ -90,7 +93,7 @@ export function createMenuLayout(
   viewportHeight: number,
   directions: Record<Direction, DragAction> = DEFAULT_SETTINGS.directions,
 ): MenuLayout {
-  const slots = CLOCKWISE_DIRECTIONS.filter((direction) => directions[direction] !== "none");
+  const slots = DIRECTIONS.filter((direction) => directions[direction] !== "none");
   const layout: MenuLayout = { x: startX, y: startY, radius: requestedRadius, targets: {} };
   if (slots.length === 0) return layout;
 

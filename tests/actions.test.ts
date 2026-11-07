@@ -58,6 +58,13 @@ for (const [action, expected] of [
   });
 }
 
+test("斜め方向も保存済みの割り当てで実行する", async () => {
+  assert.deepEqual(await executeAction({ ...request, direction: "up-right" }, sender), {
+    ok: true,
+  });
+  assert.deepEqual(calls, [["update", 12, { url: request.url }]]);
+});
+
 test("無効状態と割り当てなしの設定ではタブを操作しない", async () => {
   data.settings.enabled = false;
   await executeAction(request, sender);

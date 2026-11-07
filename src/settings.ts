@@ -8,7 +8,16 @@ export const ACTION_LABELS = {
 } as const;
 
 export type DragAction = keyof typeof ACTION_LABELS;
-export const DIRECTIONS = ["up", "down", "left", "right"] as const;
+export const DIRECTIONS = [
+  "up",
+  "up-right",
+  "right",
+  "down-right",
+  "down",
+  "down-left",
+  "left",
+  "up-left",
+] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
 export interface Settings {
@@ -24,9 +33,13 @@ export const DEFAULT_SETTINGS: Settings = {
   menuRadius: 150,
   directions: {
     up: "background-tab",
-    down: "foreground-tab",
-    left: "copy-url",
+    "up-right": "current-tab",
     right: "new-window",
+    "down-right": "foreground-tab",
+    down: "foreground-tab",
+    "down-left": "copy-url",
+    left: "copy-url",
+    "up-left": "background-tab",
   },
 };
 

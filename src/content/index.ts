@@ -116,7 +116,7 @@ window.addEventListener("dragover", (event) => {
     return;
   }
   const direction = directionAt(event);
-  if (!direction || !settings) {
+  if (!direction) {
     indicator.highlight(null);
     return;
   }

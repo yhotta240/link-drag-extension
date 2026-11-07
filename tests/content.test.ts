@@ -244,6 +244,17 @@ test("URLコピーはページ内で実行し，割り当てなしの方向で�
   expect(mocks.highlight).toHaveBeenLastCalledWith(null);
 });
 
+test("斜めに割り当てた操作をドロップ時に実行する", () => {
+  start();
+  const offset = 150 / Math.sqrt(2);
+  expect(drop(500 + offset, 400 - offset).defaultPrevented).toBe(true);
+  expect(sendMessage).toHaveBeenCalledExactlyOnceWith({
+    type: "link-drag:execute",
+    direction: "up-right",
+    url: "https://example.com/target",
+  });
+});
+
 test("表示後の位置は変えず，設定変更時は誤実行を避けてキャンセル", () => {
   start();
   expect(mocks.show).toHaveBeenCalledTimes(1);
@@ -279,7 +290,17 @@ test("全方向が割り当てなしの場合はメニューを表示せず，�
       settings: {
         newValue: {
           ...DEFAULT_SETTINGS,
-          directions: { up: "none", down: "none", left: "none", right: "none" },
+          directions: {
+            ...DEFAULT_SETTINGS.directions,
+            up: "none",
+            "up-right": "none",
+            "down-right": "none",
+            "down-left": "none",
+            "up-left": "none",
+            down: "none",
+            left: "none",
+            right: "none",
+          },
         },
       },
     },
