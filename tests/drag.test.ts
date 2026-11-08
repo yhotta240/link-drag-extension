@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { DEFAULT_SETTINGS, DIRECTIONS, normalizeSettings, type Settings } from "../src/settings.ts";
+import {
+  DEFAULT_SETTINGS,
+  DIRECTIONS,
+  ICON_SIZE_MIN,
+  ICON_SIZE_MAX,
+  normalizeSettings,
+  type Settings,
+} from "../src/settings.ts";
 import {
   createMenuLayout,
   getMenuDirection,
@@ -52,6 +59,43 @@ test("不正な設定を初期値へ戻し，有効な値と重複アクショ�
   });
 });
 
+test("アイコンサイズの上下限を保持し，範囲外や不正な値は初期値へ戻す", () => {
+  for (const iconSize of [ICON_SIZE_MIN, 47, ICON_SIZE_MAX]) {
+    assert.equal(normalizeSettings({ iconSize }).iconSize, iconSize);
+  }
+  for (const iconSize of [ICON_SIZE_MIN - 1, ICON_SIZE_MAX + 1, 44.5, NaN, Infinity, "44", null]) {
+    assert.equal(normalizeSettings({ iconSize }).iconSize, DEFAULT_SETTINGS.iconSize);
+  }
+});
+
+test("隣り合う2方向だけの割り当ても，大きなアイコンで方向を保つ", () => {
+  const layout = createMenuLayout(
+    500,
+    400,
+    80,
+    1000,
+    800,
+    {
+      ...cardinalDirections,
+      right: "none",
+      down: "none",
+      left: "none",
+      "up-right": "current-tab",
+    },
+    ICON_SIZE_MAX,
+  );
+  assert.ok(layout.radius > 80);
+  assert.equal(getMenuDirection(layout, 500, 400 - layout.radius), "up");
+  assert.equal(
+    getMenuDirection(
+      layout,
+      500 + layout.radius / Math.sqrt(2),
+      400 - layout.radius / Math.sqrt(2),
+    ),
+    "up-right",
+  );
+});
+
 test("初期状態で開始位置を中心に8方向の操作を選択できる", () => {
   const layout = createMenuLayout(500, 400, 150, 1000, 800);
   assert.equal(layout.x, 500);
@@ -76,13 +120,15 @@ test("初期状態で開始位置を中心に8方向の操作を選択できる"
   }
 });
 
-test("通常・狭い領域の4方向・8方向を，中心固定の1段に収めて選択できる", () => {
-  for (const [width, height, directions, checkEdges] of [
+test("サイズ変更や狭い領域でも，4方向・8方向を中心固定の1段に収めて選択できる", () => {
+  for (const [width, height, directions, checkEdges, iconSize = DEFAULT_SETTINGS.iconSize] of [
     [1000, 800, cardinalDirections, true],
     [1000, 800, DEFAULT_SETTINGS.directions, true],
     [400, 300, DEFAULT_SETTINGS.directions, true],
     [300, 200, cardinalDirections, false],
     [300, 200, DEFAULT_SETTINGS.directions, false],
+    [1000, 800, DEFAULT_SETTINGS.directions, true, ICON_SIZE_MIN],
+    [1000, 800, DEFAULT_SETTINGS.directions, true, ICON_SIZE_MAX],
   ] as const) {
     const positions = [[width / 2, height / 2]];
     if (checkEdges)
@@ -99,12 +145,14 @@ test("通常・狭い領域の4方向・8方向を，中心固定の1段に収�
     if (width === 1000) positions.push([500, 185.3]);
     const enabled = DIRECTIONS.filter((direction) => directions[direction] !== "none");
     for (const [x, y] of positions) {
-      const layout = createMenuLayout(x, y, 150, width, height, directions);
+      const radius = iconSize === DEFAULT_SETTINGS.iconSize ? 150 : 80;
+      const layout = createMenuLayout(x, y, radius, width, height, directions, iconSize);
       assert.equal(layout.x, x);
       assert.equal(layout.y, y);
       assert.equal(Object.keys(layout.targets).length, enabled.length);
-      assert.ok(layout.scale >= 0.75 && layout.scale <= 1);
-      if (width === 1000) assert.equal(layout.scale, 1);
+      assert.ok(MENU_ICON_SIZE * layout.scale >= ICON_SIZE_MIN);
+      assert.ok(MENU_ICON_SIZE * layout.scale <= iconSize);
+      if (width === 1000) assert.equal(layout.scale, iconSize / MENU_ICON_SIZE);
       if (width === 300) assert.ok(layout.radius < 150);
       if (width === 400 && x === 2 && y === 2) assert.ok(layout.scale < 1);
       const extent = (MENU_ICON_SIZE / 2 + MENU_ICON_GLOW) * MENU_ICON_SCALE * layout.scale;
