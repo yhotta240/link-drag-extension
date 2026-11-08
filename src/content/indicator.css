@@ -26,6 +26,10 @@ div {
   text-align: center;
 }
 
+.target.selected {
+  z-index: 1;
+}
+
 .icon {
   position: relative;
   display: flex;
