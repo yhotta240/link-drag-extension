@@ -35,11 +35,15 @@ beforeEach(() => {
       },
     },
     tabs: {
+      createSplit: async () => 1,
       create: async (value: chrome.tabs.CreateProperties) => calls.push(["create", value]),
       update: async (...args: [number, chrome.tabs.UpdateProperties]) =>
         calls.push(["update", ...args]),
     },
     windows: { create: async (value: chrome.windows.CreateData) => calls.push(["window", value]) },
+    downloads: {
+      download: async (value: chrome.downloads.DownloadOptions) => calls.push(["download", value]),
+    },
   });
 });
 
@@ -49,7 +53,16 @@ for (const [action, expected] of [
   ["background-tab", ["create", { url: request.url, active: false, windowId: 4, openerTabId: 12 }]],
   ["foreground-tab", ["create", { url: request.url, active: true, windowId: 4, openerTabId: 12 }]],
   ["current-tab", ["update", 12, { url: request.url }]],
+  ["download", ["download", { url: request.url }]],
   ["new-window", ["window", { url: request.url, incognito: false, focused: true }]],
+  ["incognito-window", ["window", { url: request.url, incognito: true, focused: true }]],
+  [
+    "split-view",
+    [
+      "create",
+      { url: request.url, active: true, windowId: 4, openerTabId: 12, splitWithTabId: 12 },
+    ],
+  ],
 ] as const) {
   test(`保存済みの方向設定から ${action} を実行`, async () => {
     data.settings.directions.up = action;
@@ -57,6 +70,13 @@ for (const [action, expected] of [
     assert.deepEqual(calls, [expected]);
   });
 }
+
+test("分割ビュー非対応のブラウザではタブを作成せず理由を返す", async () => {
+  Reflect.deleteProperty(chrome.tabs, "createSplit");
+  data.settings.directions.up = "split-view";
+  await assert.rejects(executeAction(request, sender), /Chrome 155/);
+  assert.deepEqual(calls, []);
+});
 
 test("斜め方向も保存済みの割り当てで実行する", async () => {
   assert.deepEqual(await executeAction({ ...request, direction: "up-right" }, sender), {

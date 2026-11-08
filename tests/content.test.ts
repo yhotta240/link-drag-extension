@@ -164,6 +164,18 @@ test("子要素から開始し，相対URLを正規化してドロップ時だ�
   expect(sendMessage).toHaveBeenCalledTimes(1);
 });
 
+test("操作できない理由を通知に表示する", async () => {
+  vi.stubGlobal("console", { ...console, error: vi.fn() });
+  sendMessage.mockResolvedValueOnce({
+    ok: false,
+    error: "分割ビューはChrome 155以降で利用できます",
+  });
+  start();
+  drop();
+  await Promise.resolve();
+  expect(mocks.notify).toHaveBeenCalledWith("分割ビューはChrome 155以降で利用できます", 500, 250);
+});
+
 test("操作に一度重ねても，中央・斜め・通り過ぎた位置で離すとキャンセル", () => {
   for (const [x, y] of [
     [500, 400],

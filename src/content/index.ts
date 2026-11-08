@@ -155,7 +155,11 @@ window.addEventListener(
         }
       } catch (error) {
         console.error("リンク操作に失敗しました", error);
-        indicator.notify("リンク操作に失敗しました", event.clientX, event.clientY);
+        indicator.notify(
+          error instanceof Error ? error.message : "リンク操作に失敗しました",
+          event.clientX,
+          event.clientY,
+        );
       }
     })();
   },

@@ -33,8 +33,28 @@ export async function executeAction(
     case "new-window":
       await chrome.windows.create({ url, incognito: tab.incognito, focused: true });
       break;
+    case "incognito-window":
+      await chrome.windows.create({ url, incognito: true, focused: true });
+      break;
+    case "split-view": {
+      if (typeof Reflect.get(chrome.tabs, "createSplit") !== "function") {
+        throw new Error("分割ビューはChrome 155以降で利用できます");
+      }
+      const properties: chrome.tabs.CreateProperties & { splitWithTabId: number } = {
+        url,
+        active: true,
+        windowId: tab.windowId,
+        openerTabId: tab.id,
+        splitWithTabId: tab.id,
+      };
+      await chrome.tabs.create(properties);
+      break;
+    }
     case "current-tab":
       await chrome.tabs.update(tab.id, { url });
+      break;
+    case "download":
+      await chrome.downloads.download({ url });
       break;
     // コピーはドロップ元のドキュメントで行う．
     case "copy-url":

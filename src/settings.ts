@@ -2,8 +2,11 @@ export const ACTION_LABELS = {
   "foreground-tab": "新しいタブで開く（前面）",
   "background-tab": "新しいタブで開く（背面）",
   "new-window": "新しいウィンドウで開く",
+  "incognito-window": "シークレットウィンドウで開く",
+  "split-view": "分割ビューで開く",
   "current-tab": "現在のタブで開く",
   "copy-url": "URLをコピー",
+  download: "リンク先をダウンロード",
   none: "割り当てなし",
 } as const;
 
@@ -35,11 +38,11 @@ export const DEFAULT_SETTINGS: Settings = {
     up: "background-tab",
     "up-right": "current-tab",
     right: "new-window",
-    "down-right": "foreground-tab",
+    "down-right": "split-view",
     down: "foreground-tab",
-    "down-left": "copy-url",
+    "down-left": "incognito-window",
     left: "copy-url",
-    "up-left": "background-tab",
+    "up-left": "download",
   },
 };
 
