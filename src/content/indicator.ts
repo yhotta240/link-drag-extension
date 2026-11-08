@@ -12,8 +12,17 @@ const ACTION_ICON_PATHS: Record<Exclude<DragAction, "none">, readonly string[]> 
   "foreground-tab": ["M3 7h14v14H3z", "M7 3h14v14h-4", "M6 11h8", "M10 18v-4m-2 2 2-2 2 2"],
   "background-tab": ["M3 7h14v14H3z", "M7 3h14v14h-4", "M6 11h8", "M18 6v5m-2-2 2 2 2-2"],
   "new-window": ["M14 3h7v7", "M21 3 11 13", "M10 3H3v18h18v-7"],
+  "incognito-window": [
+    "M3 10h18",
+    "M6 10l2-6h8l2 6",
+    "M4 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
+    "M14 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
+    "M10 16h4",
+  ],
+  "split-view": ["M3 4h18v16H3z", "M12 4v16", "M6 8h3", "M15 8h3"],
   "current-tab": ["M3 4h18v16H3z", "M3 8h18", "M7 14h9m-3-3 3 3-3 3"],
   "copy-url": ["M9 9h12v12H9z", "M15 9V3H3v12h6"],
+  download: ["M12 3v12", "M7 10l5 5 5-5", "M4 16v5h16v-5"],
 };
 
 /** 透明な判定領域の中心にアイコンを置き，ページのポインター操作から分離する． */
