@@ -23,10 +23,14 @@ export const DIRECTIONS = [
 ] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
+export const ICON_SIZE_MIN = 24;
+export const ICON_SIZE_MAX = 64;
+
 export interface Settings {
   enabled: boolean;
   showIndicator: boolean;
   menuRadius: number;
+  iconSize: number;
   directions: Record<Direction, DragAction>;
 }
 
@@ -34,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
   showIndicator: true,
   menuRadius: 150,
+  iconSize: 44,
   directions: {
     up: "background-tab",
     "up-right": "current-tab",
@@ -54,6 +59,15 @@ export function isDirection(value: unknown): value is Direction {
   return DIRECTIONS.some((direction) => direction === value);
 }
 
+export function isIconSize(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= ICON_SIZE_MIN &&
+    value <= ICON_SIZE_MAX
+  );
+}
+
 /** 同期データの欠落や不正値があっても，有効な設定を返す． */
 export function normalizeSettings(value: unknown): Settings {
   const data = value && typeof value === "object" ? (value as Partial<Settings>) : {};
@@ -65,6 +79,7 @@ export function normalizeSettings(value: unknown): Settings {
       Number.isSafeInteger(data.menuRadius) && Number(data.menuRadius) >= 80
         ? Number(data.menuRadius)
         : DEFAULT_SETTINGS.menuRadius,
+    iconSize: isIconSize(data.iconSize) ? data.iconSize : DEFAULT_SETTINGS.iconSize,
     directions: { ...DEFAULT_SETTINGS.directions },
   };
   for (const direction of DIRECTIONS) {

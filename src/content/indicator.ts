@@ -86,13 +86,13 @@ export class DragIndicator {
       icon.append(svg);
       const action = document.createElement("span");
       action.className = "label";
-      action.classList.toggle("above", target.y + target.height / 2 + 80 > innerHeight - 8);
       action.textContent = ACTION_LABELS[assignedAction];
       card.append(icon, action);
       root.append(card);
       this.targets.set(direction, card);
       // 操作名は判定領域と別に寄せ，アイコンが端に近くても全文を読めるようにする．
       const bounds = action.getBoundingClientRect();
+      action.classList.toggle("above", bounds.bottom > innerHeight - MENU_VIEWPORT_MARGIN);
       const offset = Math.max(
         MENU_VIEWPORT_MARGIN - bounds.left,
         Math.min(0, innerWidth - MENU_VIEWPORT_MARGIN - bounds.right),
