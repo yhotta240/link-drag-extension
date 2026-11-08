@@ -2,7 +2,10 @@ import {
   ACTION_LABELS,
   DEFAULT_SETTINGS,
   DIRECTIONS,
+  ICON_SIZE_MAX,
+  ICON_SIZE_MIN,
   isDragAction,
+  isIconSize,
   normalizeSettings,
   type Settings,
 } from "../../settings";
@@ -13,6 +16,11 @@ export async function setupSettings(): Promise<void> {
   const fields = document.getElementById("settings-fields") as HTMLFieldSetElement;
   const showIndicator = document.getElementById("show-indicator") as HTMLInputElement;
   const distance = document.getElementById("menu-radius") as HTMLInputElement;
+  const iconSize = document.getElementById("icon-size") as HTMLInputElement;
+  const iconSizeHelp = document.getElementById("icon-size-help") as HTMLElement;
+  iconSize.min = String(ICON_SIZE_MIN);
+  iconSize.max = String(ICON_SIZE_MAX);
+  iconSizeHelp.textContent = `${ICON_SIZE_MIN}〜${ICON_SIZE_MAX}pxで調整できます．`;
   const reset = document.getElementById("reset-settings") as HTMLButtonElement;
   const status = document.getElementById("settings-status") as HTMLElement;
   const selects = DIRECTIONS.map(
@@ -41,6 +49,8 @@ export async function setupSettings(): Promise<void> {
     showIndicator.checked = settings.showIndicator;
     distance.value = String(settings.menuRadius);
     distance.setCustomValidity("");
+    iconSize.value = String(settings.iconSize);
+    iconSize.setCustomValidity("");
     selects.forEach((select, index) => {
       select.value = settings.directions[DIRECTIONS[index]];
     });
@@ -82,6 +92,16 @@ export async function setupSettings(): Promise<void> {
       return;
     }
     void save({ ...settings, menuRadius: value });
+  });
+  iconSize.addEventListener("input", () => iconSize.setCustomValidity(""));
+  iconSize.addEventListener("change", () => {
+    const value = iconSize.valueAsNumber;
+    if (!isIconSize(value)) {
+      iconSize.setCustomValidity(`${ICON_SIZE_MIN}〜${ICON_SIZE_MAX}の整数を入力してください`);
+      iconSize.reportValidity();
+      return;
+    }
+    void save({ ...settings, iconSize: value });
   });
   selects.forEach((select, index) => {
     select.addEventListener("change", () => {

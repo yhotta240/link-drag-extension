@@ -90,6 +90,7 @@ window.addEventListener("dragstart", (event) => {
     innerWidth,
     innerHeight,
     settings.directions,
+    settings.iconSize,
   );
   if (Object.keys(layout.targets).length === 0) return;
   session = { url, layout };

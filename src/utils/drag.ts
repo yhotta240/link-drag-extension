@@ -1,4 +1,10 @@
-import { DEFAULT_SETTINGS, DIRECTIONS, type Direction, type DragAction } from "../settings";
+import {
+  DEFAULT_SETTINGS,
+  DIRECTIONS,
+  type Direction,
+  type DragAction,
+  ICON_SIZE_MIN,
+} from "../settings";
 
 export const MENU_ICON_SIZE = 44;
 export const MENU_ICON_SCALE = 1.16;
@@ -93,6 +99,7 @@ export function createMenuLayout(
   viewportWidth: number,
   viewportHeight: number,
   directions: Record<Direction, DragAction> = DEFAULT_SETTINGS.directions,
+  iconSize: number = DEFAULT_SETTINGS.iconSize,
 ): MenuLayout {
   const slots = DIRECTIONS.filter((direction) => directions[direction] !== "none");
   const layout: MenuLayout = {
@@ -104,30 +111,44 @@ export function createMenuLayout(
   };
   if (slots.length === 0) return layout;
 
-  // 距離は基準値として半径を調整し，収まらなければ全体を75％まで縮小する．
-  for (const scale of [1, 0.875, 0.75]) {
+  // 設定サイズの75％まで縮小するが，操作性のため24pxを下回らない．
+  const scales = new Set(
+    [1, 0.875, 0.75].map((shrink) => Math.max(ICON_SIZE_MIN, iconSize * shrink) / MENU_ICON_SIZE),
+  );
+  for (const scale of scales) {
     layout.scale = scale;
     const inset =
       MENU_VIEWPORT_MARGIN + (MENU_ICON_SIZE / 2 + MENU_ICON_GLOW) * MENU_ICON_SCALE * scale;
+    const spacing = (MENU_ICON_SIZE * MENU_ICON_SCALE + 8) * scale;
+    const directionRadius = Math.max(
+      requestedRadius,
+      ...slots.flatMap((slot, index) =>
+        slots.slice(index + 1).map((other) => {
+          const [ax, ay] = DIRECTION_OFFSETS[slot],
+            [bx, by] = DIRECTION_OFFSETS[other];
+          return spacing / Math.hypot(ax - bx, ay - by);
+        }),
+      ),
+    );
     const fitsDirections = slots.every((slot) => {
       const [dx, dy] = DIRECTION_OFFSETS[slot];
-      const x = startX + dx * requestedRadius;
-      const y = startY + dy * requestedRadius;
+      const x = startX + dx * directionRadius;
+      const y = startY + dy * directionRadius;
       return x >= inset && x <= viewportWidth - inset && y >= inset && y <= viewportHeight - inset;
     });
     if (fitsDirections) {
+      layout.radius = directionRadius;
       for (const slot of slots) {
         const [dx, dy] = DIRECTION_OFFSETS[slot];
         layout.targets[slot] = createTarget(
-          startX + dx * requestedRadius,
-          startY + dy * requestedRadius,
+          startX + dx * directionRadius,
+          startY + dy * directionRadius,
           scale,
         );
       }
       return layout;
     }
 
-    const spacing = (MENU_ICON_SIZE * MENU_ICON_SCALE + 8) * scale;
     const minimumRadius = Math.max(
       40 * scale,
       slots.length > 1 ? spacing / (2 * Math.sin(Math.PI / slots.length)) : 40 * scale,
