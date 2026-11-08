@@ -1,6 +1,6 @@
 {
   "name": "link-drag-extension",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "リンクをドラッグする方向で，タブやウィンドウの開き方やURLコピーを切り替えるChrome拡張機能",
   "type": "module",
   "scripts": {
