@@ -47,8 +47,10 @@ export async function setupSettings(): Promise<void> {
     enabled.checked = settings.enabled;
     enabled.setAttribute("aria-checked", String(settings.enabled));
     showIndicator.checked = settings.showIndicator;
+    distance.disabled = !settings.showIndicator;
     distance.value = String(settings.menuRadius);
     distance.setCustomValidity("");
+    iconSize.disabled = !settings.showIndicator;
     iconSize.value = String(settings.iconSize);
     iconSize.setCustomValidity("");
     selects.forEach((select, index) => {

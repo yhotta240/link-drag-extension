@@ -29,6 +29,7 @@ const ACTION_ICON_PATHS: Record<Exclude<DragAction, "none">, readonly string[]> 
 export class DragIndicator {
   private host: HTMLDivElement | null = null;
   private targets = new Map<Direction, HTMLDivElement>();
+  private cursorLabel: HTMLDivElement | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private frame = 0;
 
@@ -107,6 +108,28 @@ export class DragIndicator {
     }
   }
 
+  follow(text: string | null, x: number, y: number): void {
+    if (text === null) {
+      if (this.cursorLabel) this.hide();
+      return;
+    }
+    if (!this.cursorLabel) {
+      const root = this.createRoot();
+      this.cursorLabel = document.createElement("div");
+      this.cursorLabel.className = "cursor-label";
+      root.append(this.cursorLabel);
+    }
+
+    const label = this.cursorLabel;
+    if (label.textContent !== text) label.textContent = text;
+    const { offsetWidth: width, offsetHeight: height } = label;
+    const margin = MENU_VIEWPORT_MARGIN;
+    const left = Math.max(margin, Math.min(x - width / 2, innerWidth - width - margin));
+    const below = y + 24;
+    const top = below + height <= innerHeight - margin ? below : Math.max(margin, y - height - 8);
+    label.style.transform = `translate(${left}px, ${top}px)`;
+  }
+
   notify(text: string, x: number, y: number): void {
     const root = this.createRoot();
     const label = document.createElement("div");
@@ -130,6 +153,7 @@ export class DragIndicator {
     this.timer = undefined;
     this.host?.remove();
     this.host = null;
+    this.cursorLabel = null;
     this.targets.clear();
   }
 }

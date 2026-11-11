@@ -72,11 +72,8 @@ span {
   display: block;
 }
 
-.label {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+.label,
+.cursor-label {
   width: max-content;
   max-width: min(160px, calc(100vw - 8px));
   padding: 4px 7px;
@@ -84,6 +81,13 @@ span {
   background: rgb(24 33 47 / 95%);
   font-size: 12px;
   text-align: center;
+}
+
+.label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.14s ease;
@@ -97,6 +101,11 @@ span {
 .target.selected .label {
   opacity: 1;
   visibility: visible;
+}
+
+.cursor-label {
+  top: 0;
+  left: 0;
 }
 
 .toast {

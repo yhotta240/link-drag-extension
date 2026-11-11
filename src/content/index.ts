@@ -1,7 +1,8 @@
 import type { ActionResult } from "../background/actions";
-import { normalizeSettings, type Settings } from "../settings";
+import { ACTION_LABELS, type Direction, normalizeSettings, type Settings } from "../settings";
 import {
   createMenuLayout,
+  getDragDirection,
   getMenuDirection,
   type MenuLayout,
   normalizeLinkUrl,
@@ -12,7 +13,9 @@ import { DragIndicator } from "./indicator";
 
 interface DragSession {
   url: string;
-  layout: MenuLayout;
+  x: number;
+  y: number;
+  layout: MenuLayout | null;
 }
 
 const indicator = new DragIndicator();
@@ -83,18 +86,21 @@ window.addEventListener("dragstart", (event) => {
   }
   const url = normalizeLinkUrl(link.getAttribute("href") ?? "", link.baseURI);
   if (!url) return;
-  const layout = createMenuLayout(
-    mouseStart.x,
-    mouseStart.y,
-    settings.menuRadius,
-    innerWidth,
-    innerHeight,
-    settings.directions,
-    settings.iconSize,
-  );
-  if (Object.keys(layout.targets).length === 0) return;
-  session = { url, layout };
-  if (settings.showIndicator) indicator.show(session.layout, settings.directions);
+  const { x, y } = mouseStart;
+  const layout = settings.showIndicator
+    ? createMenuLayout(
+        x,
+        y,
+        settings.menuRadius,
+        innerWidth,
+        innerHeight,
+        settings.directions,
+        settings.iconSize,
+      )
+    : null;
+  if (layout && Object.keys(layout.targets).length === 0) return;
+  session = { url, x, y, layout };
+  if (layout) indicator.show(layout, settings.directions);
 });
 
 function directionAt(event: DragEvent) {
@@ -107,25 +113,31 @@ function directionAt(event: DragEvent) {
   ) {
     return null;
   }
-  return getMenuDirection(session.layout, event.clientX, event.clientY);
+  if (session.layout) return getMenuDirection(session.layout, event.clientX, event.clientY);
+
+  const direction = getDragDirection(event.clientX - session.x, event.clientY - session.y);
+  return direction && settings.directions[direction] !== "none" ? direction : null;
+}
+
+function updateDragFeedback(direction: Direction | null, event: DragEvent): void {
+  if (!session || !settings) return;
+  if (session.layout) {
+    indicator.highlight(direction);
+  } else {
+    const label = direction ? ACTION_LABELS[settings.directions[direction]] : null;
+    indicator.follow(label, event.clientX, event.clientY);
+  }
 }
 
 window.addEventListener("dragover", (event) => {
   acceptedTarget = null;
-  if (!event.isTrusted || event.defaultPrevented) {
-    indicator.highlight(null);
-    return;
-  }
-  const direction = directionAt(event);
-  if (!direction) {
-    indicator.highlight(null);
-    return;
-  }
+  const direction = event.isTrusted && !event.defaultPrevented ? directionAt(event) : null;
+  updateDragFeedback(direction, event);
+  if (!direction) return;
   // 有効なジェスチャーだけをドロップ可能にし，標準操作を必要な範囲で抑止する．
   event.preventDefault();
   acceptedTarget = event.target;
   if (event.dataTransfer) event.dataTransfer.dropEffect = "link";
-  indicator.highlight(direction);
 });
 
 window.addEventListener(
@@ -179,7 +191,7 @@ window.addEventListener(
 window.addEventListener("dragleave", (event) => {
   if (!event.relatedTarget) {
     acceptedTarget = null;
-    indicator.highlight(null);
+    updateDragFeedback(null, event);
   }
 });
 window.addEventListener(
