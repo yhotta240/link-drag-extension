@@ -11,6 +11,7 @@ export const MENU_ICON_SCALE = 1.16;
 export const MENU_ICON_GLOW = 5;
 export const MENU_VIEWPORT_MARGIN = 4;
 const MENU_TARGET_SIZE = 64;
+const MIN_DRAG_DISTANCE = 20;
 
 export interface MenuTarget {
   x: number;
@@ -213,6 +214,16 @@ export function getMenuDirection(layout: MenuLayout, x: number, y: number): Dire
     }
   }
   return selected;
+}
+
+/** 開始点から十分に動いたら，最も近い方向を返す． */
+export function getDragDirection(dx: number, dy: number): Direction | null {
+  const distance = Math.hypot(dx, dy);
+  if (!Number.isFinite(distance) || distance < MIN_DRAG_DISTANCE) return null;
+
+  const angle = Math.atan2(dx, -dy);
+  const sector = Math.round(angle / (FULL_CIRCLE / DIRECTIONS.length));
+  return DIRECTIONS[(sector + DIRECTIONS.length) % DIRECTIONS.length];
 }
 
 /** リンク操作はHTTP(S)のみとし，javascript:などは実行しない． */
