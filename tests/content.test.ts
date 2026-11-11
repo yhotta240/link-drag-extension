@@ -1,12 +1,19 @@
 import { afterEach, beforeEach, expect, type Mock, test, vi } from "vitest";
 import type { ActionResult } from "../src/background/actions.ts";
-import { DEFAULT_SETTINGS, normalizeSettings, type Settings } from "../src/settings.ts";
+import {
+  ACTION_LABELS,
+  DEFAULT_SETTINGS,
+  type Direction,
+  type DragAction,
+  normalizeSettings,
+  type Settings,
+} from "../src/settings.ts";
 import type { MenuLayout } from "../src/utils/drag.ts";
-import type { Direction, DragAction } from "../src/settings.ts";
 
 const mocks = vi.hoisted(() => ({
   show: vi.fn<(layout: MenuLayout, directions: Record<Direction, DragAction>) => void>(),
   highlight: vi.fn<(direction: Direction | null) => void>(),
+  follow: vi.fn<(text: string | null, x: number, y: number) => void>(),
   hide: vi.fn<() => void>(),
   notify: vi.fn<(text: string, x: number, y: number) => void>(),
   copyUrl: vi.fn<(url: string) => Promise<void>>(),
@@ -16,6 +23,7 @@ vi.mock("../src/content/indicator.ts", () => ({
   DragIndicator: class {
     show = mocks.show;
     highlight = mocks.highlight;
+    follow = mocks.follow;
     hide = mocks.hide;
     notify = mocks.notify;
   },
@@ -229,6 +237,37 @@ test("同期設定の変更を反映し，無効化すると進行中のドラ�
   start();
   drop();
   expect(sendMessage).toHaveBeenCalledOnce();
+});
+
+test.each([
+  { label: "左端へ20px", x: 2, y: 200, direction: "left" },
+  { label: "右下", x: 38, y: 216, direction: "down-right" },
+  { label: "20px未満", x: 3, y: 200, direction: null },
+  { label: "割り当てなし", x: 22, y: 222, direction: null },
+] as const)("メニュー非表示時は20px以上のドラッグを方向で判定する（$label）", ({ x, y, direction }) => {
+  const settings: Settings = {
+    ...DEFAULT_SETTINGS,
+    showIndicator: false,
+    directions: { ...DEFAULT_SETTINGS.directions, left: "background-tab", down: "none" },
+  };
+  changed({ settings: { newValue: settings } }, "sync");
+  fire("mousedown", { target: child, clientX: 22, clientY: 200 });
+  fire("dragstart", { target: child, clientX: 12, clientY: 200 });
+  expect(mocks.show).not.toHaveBeenCalled();
+  expect(fire("dragover", { clientX: x, clientY: y }).defaultPrevented).toBe(direction !== null);
+  const label = direction ? ACTION_LABELS[settings.directions[direction]] : null;
+  expect(mocks.follow).toHaveBeenLastCalledWith(label, x, y);
+  expect(sendMessage).not.toHaveBeenCalled();
+  expect(fire("drop", { clientX: x, clientY: y }).defaultPrevented).toBe(direction !== null);
+  if (direction) {
+    expect(sendMessage).toHaveBeenCalledExactlyOnceWith({
+      type: "link-drag:execute",
+      direction,
+      url: "https://example.com/target",
+    });
+  } else {
+    expect(sendMessage).not.toHaveBeenCalled();
+  }
 });
 
 test("URLコピーはページ内で実行し，割り当てなしの方向ではドロップを抑止しない", async () => {
